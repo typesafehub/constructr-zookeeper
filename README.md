@@ -1,5 +1,5 @@
 # ConstructR-ZooKeeper #
-[![Build Status](https://travis-ci.org/typesafehuv/constructr-zookeeper.svg?branch=master)](https://travis-ci.org/typesafehuv/constructr-zookeeper)
+[![Build Status](https://travis-ci.org/typesafehub/constructr-zookeeper.svg?branch=master)](https://travis-ci.org/typesafehub/constructr-zookeeper)
 
 This library enables to use [ZooKeeper](https://zookeeper.apache.org/) as cluster coordinator in a [ConstructR](https://github.com/hseeberger/constructr) based node.
 
@@ -8,8 +8,6 @@ This library enables to use [ZooKeeper](https://zookeeper.apache.org/) as cluste
 You will need to add the following dependency in your `build.sbt` in addition to the core ConstructR ones:
 
 ```
-resolvers += Resolver.bintrayRepo("everpeace", "maven")
-
 libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.1.0",
 ```
 
