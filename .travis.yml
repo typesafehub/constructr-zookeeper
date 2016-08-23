@@ -1,0 +1,15 @@
+sudo: required
+
+language: scala
+
+jdk:
+  - oraclejdk8
+
+services:
+  - docker
+
+before_install:
+  - docker pull jplock/zookeeper
+  - docker run -p 2181:2181 -d jplock/zookeeper
+
+script: sbt test
