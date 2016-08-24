@@ -1,7 +1,6 @@
 lazy val constructrZookeeperRoot = project
   .copy(id = "constructr-zookeeper-root")
   .in(file("."))
-  .enablePlugins(GitVersioning)
   .aggregate(constructrCoordinationZookeeper, constructrAkkaTesting)
 
 lazy val constructrCoordinationZookeeper = project
@@ -20,5 +19,3 @@ name := "constructr-zookeeper-root"
 
 unmanagedSourceDirectories.in(Compile) := Vector.empty
 unmanagedSourceDirectories.in(Test)    := Vector.empty
-
-publishArtifact := false
