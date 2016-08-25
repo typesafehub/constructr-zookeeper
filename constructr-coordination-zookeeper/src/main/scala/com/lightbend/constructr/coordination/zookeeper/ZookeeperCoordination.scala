@@ -28,7 +28,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
 import de.heikoseeberger.constructr.coordination.Coordination.NodeSerialization
-import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.framework.{ CuratorFramework, CuratorFrameworkFactory }
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.utils.ZKPaths
@@ -94,22 +94,39 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
   private val LocksPath = s"$BasePath/locks"
   private val LockKey = s"$LocksPath/nodes-lock"
 
+  private val host = system.settings.config.getString("constructr.coordination.host")
+  private val port = system.settings.config.getInt("constructr.coordination.port")
+  private val address = s"$host:$port"
+
   private val client = {
-    val host = system.settings.config.getString("constructr.coordination.host")
-    val port = system.settings.config.getInt("constructr.coordination.port")
     val delay = system.settings.config.getDuration("constructr.coordination.connection-delay", MILLISECONDS)
     val retry = system.settings.config.getInt("constructr.coordination.connection-retry")
     CuratorFrameworkFactory.builder()
-      .connectString(s"$host:$port")
+      .connectString(address)
       .retryPolicy(new ExponentialBackoffRetry(delay.toInt, retry))
       .build()
   }
-  client.start()
 
-  private val lock = new InterProcessSemaphoreMutex(client, LocksPath)
+  run()
+  private val lock = init()
 
-  ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, NodesPath)
-  ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, LocksPath)
+  private def run(): Unit = {
+    def shutdown(): Unit = {
+      system.log.info("Zookeeper client closes connection to node {}..", address)
+      client.close()
+    }
+
+    system.log.info("Zookeeper client tries to establish a connection to node {}..", address)
+    client.start()
+    client.blockUntilConnected()
+    sys.addShutdownHook(shutdown())
+  }
+
+  private def init(): InterProcessSemaphoreMutex = {
+    ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, NodesPath)
+    ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, LocksPath)
+    new InterProcessSemaphoreMutex(client, LocksPath)
+  }
 
   override def getNodes[A: NodeSerialization](): Future[Set[A]] =
     Future.successful {
