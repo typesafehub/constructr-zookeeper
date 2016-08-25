@@ -20,8 +20,6 @@ object Build extends AutoPlugin {
   override def projectSettings = Vector(
     // Core settings
     organization := "com.lightbend.constructr",
-    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
-    homepage := Some(url("https://github.com/typesafehub/constructr-zookeeper")),
     scalaVersion := Version.scala,
     crossScalaVersions := Vector(scalaVersion.value),
     scalacOptions ++= Vector(
@@ -32,6 +30,12 @@ object Build extends AutoPlugin {
       "-encoding", "UTF-8",
       "-Ywarn-unused-import"
     ),
+    licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0")),
+    homepage := Some(url("https://github.com/typesafehub/constructr-zookeeper")),
+    developers := List(
+      Developer("lightbend", "Lightbend Library Contributors", "", url("https://github.com/typesafehub/constructr-zookeeper/graphs/contributors"))
+    ),
+    scmInfo := Some(ScmInfo(url("https://github.com/typesafehub/constructr-zookeeper"), "git@github.com:typesafehub/constructr-zookeeper.git")),
     unmanagedSourceDirectories.in(Compile) := Vector(scalaSource.in(Compile).value),
     unmanagedSourceDirectories.in(Test) := Vector(scalaSource.in(Test).value),
 
