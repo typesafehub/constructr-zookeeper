@@ -91,8 +91,9 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
 
   private val BasePath = s"/constructr/$prefix/$clusterName"
   private val NodesPath = s"$BasePath/nodes"
-  private val LocksPath = s"$BasePath/locks"
-  private val LockKey = s"$LocksPath/nodes-lock"
+  private val BaseLockPath = s"$BasePath/locks"
+  private val SharedLockPath = s"$BaseLockPath/shared"
+  private val NodesLockKey = s"$BaseLockPath/nodes-lock"
 
   private val host = system.settings.config.getString("constructr.coordination.host")
   private val port = system.settings.config.getInt("constructr.coordination.port")
@@ -124,8 +125,8 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
 
   private def init(): InterProcessSemaphoreMutex = {
     ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, NodesPath)
-    ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, LocksPath)
-    new InterProcessSemaphoreMutex(client, LocksPath)
+    ZKPaths.mkdirs(client.getZookeeperClient.getZooKeeper, BaseLockPath)
+    new InterProcessSemaphoreMutex(client, SharedLockPath)
   }
 
   override def getNodes[A: NodeSerialization](): Future[Set[A]] =
@@ -146,8 +147,8 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
 
   override def lock[A: NodeSerialization](self: A, ttl: FiniteDuration): Future[Boolean] = {
     def readLock(): Option[Instant] =
-      Option(client.checkExists().forPath(LockKey)).map { _ =>
-        client.getData.forPath(LockKey).decodeInstant
+      Option(client.checkExists().forPath(NodesLockKey)).map { _ =>
+        client.getData.forPath(NodesLockKey).decodeInstant
       }
 
     def writeLock(expiredLockExist: Boolean): Boolean = {
@@ -155,9 +156,9 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
         lock.acquire()
         if (lock.isAcquiredInThisProcess) {
           if (expiredLockExist)
-            client.delete().forPath(LockKey)
+            client.delete().forPath(NodesLockKey)
           try {
-            client.create().forPath(LockKey, (Instant.now + ttl).encode)
+            client.create().forPath(NodesLockKey, (Instant.now + ttl).encode)
             true
           } catch {
             case e: NodeExistsException =>
