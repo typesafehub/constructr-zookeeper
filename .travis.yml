@@ -12,4 +12,4 @@ before_install:
   - docker pull jplock/zookeeper
   - docker run -p 2181:2181 -d jplock/zookeeper
 
-script: sbt test
+script: sbt constructr-coordination-zookeeper/test constructr-akka-testing/test

@@ -28,7 +28,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
 import de.heikoseeberger.constructr.coordination.Coordination.NodeSerialization
-import org.apache.curator.framework.{ CuratorFramework, CuratorFrameworkFactory }
+import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.utils.ZKPaths
