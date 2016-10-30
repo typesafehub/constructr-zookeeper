@@ -1,7 +1,7 @@
 name := "constructr-akka-testing"
 
 libraryDependencies ++= Vector(
-  Library.constructrAkka       % "test",
+  Library.constructr           % "test",
   Library.akkaCluster          % "test",
   Library.akkaMultiNodeTestkit % "test",
   Library.akkaTestkit          % "test",

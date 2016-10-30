@@ -17,7 +17,6 @@
 package com.lightbend.constructr.coordination.zookeeper
 
 import akka.actor.ActorDSL.{Act, actor}
-import akka.actor.Address
 import akka.cluster.{Cluster, ClusterEvent}
 import akka.pattern.ask
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
@@ -25,7 +24,7 @@ import akka.stream.ActorMaterializer
 import akka.testkit.TestDuration
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import de.heikoseeberger.constructr.akka.ConstructrExtension
+import de.heikoseeberger.constructr.ConstructrExtension
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
@@ -61,7 +60,7 @@ class ConstructrMultiNodeConfig(coordinationPort: Int) extends MultiNodeConfig {
   }
 }
 
-abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, prefix: String, clusterName: String)
+abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clusterName: String)
   extends MultiNodeSpec(new ConstructrMultiNodeConfig(coordinationPort))
     with FreeSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -76,7 +75,7 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, prefi
       .retryPolicy(new ExponentialBackoffRetry(delay.toInt, retry))
       .build()
   }
-  private val zookeeperCoordination = Coordination(prefix, clusterName, system)
+  private val zookeeperCoordination = Coordination(clusterName, system)
 
   "Constructr should manage an Akka cluster" in {
     runOn(roles.head) {
@@ -112,9 +111,8 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, prefi
 
     within(5.seconds.dilated) {
       awaitAssert {
-        import de.heikoseeberger.constructr.akka._
         val constructrNodes = Await.result(
-          zookeeperCoordination.getNodes[Address](),
+          zookeeperCoordination.getNodes(),
           1.second.dilated
         )
         roles.to[Set].map(_.name.toInt) shouldEqual constructrNodes.flatMap(_.port)
