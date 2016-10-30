@@ -21,7 +21,7 @@ Check [reference.conf](constructr-coordination-zookeeper/src/main/resources/refe
 ## Testing
 
 Requirements:
-  - ZooKeeper needs to be running, e.g. via ` docker run --name zookeeper -p 2181:2181 -d jplock/zookeeper`
+  - ZooKeeper needs to be running, e.g. via `docker run --name zookeeper -p 2181:2181 -d jplock/zookeeper`
 
 Run tests:
   - `sbt test`

@@ -20,14 +20,14 @@ package zookeeper
 import java.time.Instant
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, Address, AddressFromURIString }
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
-import de.heikoseeberger.constructr.coordination.Coordination.NodeSerialization
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
@@ -60,14 +60,14 @@ private object ZookeeperCoordination {
       }
     }
 
-    implicit class NodeSerializationOps[A: NodeSerialization](a: A) {
+    implicit class AddressOps(address: Address) {
       def encode: String =
-        Base64.getUrlEncoder.encodeToString(NodeSerialization.toBytes(a))
+        Base64.getUrlEncoder.encodeToString(address.toString.getBytes(UTF_8))
     }
 
     implicit class StringOps(s: String) {
-      def decodeNode[A: NodeSerialization]: A =
-        NodeSerialization.fromBytes(Base64.getUrlDecoder.decode(s))
+      def decodeNode: Address =
+        AddressFromURIString(new String(Base64.getUrlDecoder.decode(s), UTF_8))
     }
   }
 }
@@ -85,11 +85,10 @@ private object ZookeeperCoordination {
  * The TTL in milliseconds represents the time elapsed since 1970-01-01T00:00:00 UTC.
  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
  */
-final class ZookeeperCoordination(prefix: String, clusterName: String, system: ActorSystem) extends Coordination {
-  import Coordination._
+final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination {
   import ZookeeperCoordination.Converters._
 
-  private val BasePath = s"/constructr/$prefix/$clusterName"
+  private val BasePath = s"/constructr/$clusterName"
   private val NodesPath = s"$BasePath/nodes"
   private val BaseLockPath = s"$BasePath/locks"
   private val SharedLockPath = s"$BaseLockPath/shared"
@@ -129,7 +128,7 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
     new InterProcessSemaphoreMutex(client, SharedLockPath)
   }
 
-  override def getNodes[A: NodeSerialization](): Future[Set[A]] =
+  override def getNodes(): Future[Set[Address]] =
     Future.successful {
       val result = nodes
         .flatMap { node =>
@@ -145,7 +144,7 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
       result
     }
 
-  override def lock[A: NodeSerialization](self: A, ttl: FiniteDuration): Future[Boolean] = {
+  override def lock(self: Address, ttl: FiniteDuration): Future[Boolean] = {
     def readLock(): Option[Instant] =
       Option(client.checkExists().forPath(NodesLockKey)).map { _ =>
         client.getData.forPath(NodesLockKey).decodeInstant
@@ -184,7 +183,7 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
     }
   }
 
-  override def addSelf[A: NodeSerialization](self: A, ttl: FiniteDuration): Future[Done] = {
+  override def addSelf(self: Address, ttl: FiniteDuration): Future[Done] = {
     Future.successful {
       val nodePath = s"$NodesPath/${self.encode}"
       Option(client.checkExists().forPath(nodePath))
@@ -195,7 +194,7 @@ final class ZookeeperCoordination(prefix: String, clusterName: String, system: A
     }
   }
 
-  override def refresh[A: NodeSerialization](self: A, ttl: FiniteDuration): Future[Done] =
+  override def refresh(self: Address, ttl: FiniteDuration): Future[Done] =
     Future.successful {
       nodes.foreach { node =>
         val nodePath = s"$NodesPath/$node"

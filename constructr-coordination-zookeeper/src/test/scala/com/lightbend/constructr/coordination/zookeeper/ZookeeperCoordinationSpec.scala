@@ -16,26 +16,20 @@
 
 package com.lightbend.constructr.coordination.zookeeper
 
-import java.nio.charset.StandardCharsets._
-
 import akka.Done
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, AddressFromURIString }
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
-import scala.concurrent.{ Awaitable, Await }
+import scala.concurrent.{ Await, Awaitable }
 import scala.concurrent.duration._
 import scala.util.Random
 
 object ZookeeperCoordinationSpec {
-  import Coordination._
-
-  private implicit val stringNodeSerialization = new NodeSerialization[String] {
-    override def fromBytes(bytes: Array[Byte]) = new String(bytes, UTF_8)
-    override def toBytes(s: String) = s.getBytes(UTF_8)
-  }
+  private val address1 = AddressFromURIString("akka.tcp://default@a:2552")
+  private val address2 = AddressFromURIString("akka.tcp://default@b:2552")
 
   // this test assumes zookeeper server is up on DOCKER_HOST or localhost(127.0.0.1)
   // below command would be help:
@@ -58,24 +52,24 @@ class ZookeeperCoordinationSpec extends WordSpec with Matchers with BeforeAndAft
 
   "ZookeeperCoordination" should {
     "correctly interact with zookeeper" in {
-      val coordination: Coordination = new ZookeeperCoordination(randomString(), randomString(), system)
+      val coordination: Coordination = new ZookeeperCoordination(randomString(), system)
 
-      resultOf(coordination.getNodes[String]()) shouldBe 'empty
+      resultOf(coordination.getNodes()) shouldBe 'empty
 
-      resultOf(coordination.lock[String]("self", 10.seconds)) shouldBe true
-      resultOf(coordination.lock[String]("other", 10.seconds)) shouldBe false
+      resultOf(coordination.lock(address1, 10.seconds)) shouldBe true
+      resultOf(coordination.lock(address2, 10.seconds)) shouldBe false
 
-      resultOf(coordination.addSelf[String]("self", 10.seconds)) shouldBe Done
-      resultOf(coordination.getNodes[String]()) shouldBe Set("self")
+      resultOf(coordination.addSelf(address1, 10.seconds)) shouldBe Done
+      resultOf(coordination.getNodes()) shouldBe Set(address1)
 
-      resultOf(coordination.refresh[String]("self", 1.second)) shouldBe Done
-      resultOf(coordination.getNodes[String]()) shouldBe Set("self")
+      resultOf(coordination.refresh(address1, 1.second)) shouldBe Done
+      resultOf(coordination.getNodes()) shouldBe Set(address1)
 
       val probe = TestProbe()
       import probe._
       within(5.seconds) { // 2 seconds should be enough, but who knows hows ...
         awaitAssert {
-          resultOf(coordination.getNodes[String]()) shouldBe 'empty
+          resultOf(coordination.getNodes()) shouldBe 'empty
         }
       }
     }

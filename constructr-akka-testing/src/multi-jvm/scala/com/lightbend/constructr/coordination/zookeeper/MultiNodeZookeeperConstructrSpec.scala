@@ -24,6 +24,5 @@ class MultiNodeZookeeperConstructrSpecMultiJvmNode5 extends MultiNodeZookeeperCo
 
 abstract class MultiNodeZookeeperConstructrSpec extends MultiNodeZookeeperConstructrBaseSpec(
   2181,
-  "akka",
   "MultiNodeZookeeperConstructrBaseSpec"
 )
