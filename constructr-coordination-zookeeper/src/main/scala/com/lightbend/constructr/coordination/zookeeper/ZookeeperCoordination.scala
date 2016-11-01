@@ -94,15 +94,14 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   private val SharedLockPath = s"$BaseLockPath/shared"
   private val NodesLockKey = s"$BaseLockPath/nodes-lock"
 
-  private val host = system.settings.config.getString("constructr.coordination.host")
-  private val port = system.settings.config.getInt("constructr.coordination.port")
-  private val address = s"$host:$port"
+  private val nodesConnectionString =
+    system.settings.config.getStringList("constructr.coordination.nodes").asScala.mkString(",")
 
   private val client = {
     val delay = system.settings.config.getDuration("constructr.coordination.connection-delay", MILLISECONDS)
     val retry = system.settings.config.getInt("constructr.coordination.connection-retry")
     CuratorFrameworkFactory.builder()
-      .connectString(address)
+      .connectString(nodesConnectionString)
       .retryPolicy(new ExponentialBackoffRetry(delay.toInt, retry))
       .build()
   }
@@ -112,11 +111,11 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
 
   private def run(): Unit = {
     def shutdown(): Unit = {
-      system.log.info("Zookeeper client closes connection to node {}..", address)
+      system.log.info("Zookeeper client closes connection to nodes [{}]..", nodesConnectionString)
       client.close()
     }
 
-    system.log.info("Zookeeper client tries to establish a connection to node {}..", address)
+    system.log.info("Zookeeper client tries to establish a connection to nodes [{}]..", nodesConnectionString)
     client.start()
     client.blockUntilConnected()
     sys.addShutdownHook(shutdown())
