@@ -18,6 +18,24 @@ Check [this section](https://github.com/hseeberger/constructr#coordination) in C
 
 Check [reference.conf](constructr-coordination-zookeeper/src/main/resources/reference.conf) for ZooKeeper related configuration.
 
+### Configuring ZK cluster nodes ###
+
+The default configuration tries to establish a connection to ZooKeeper on `localhost:2181`.
+
+Override the `constructr.coordination.nodes` configuration to specify another ZooKeeper node:
+
+```
+constructr.coordination.nodes = ["10.10.10.10:2181"]
+```
+
+The format per node `ip:port`.
+
+You are also able to connect to a multi-node cluster by specifying multiple nodes, separated by a comma:
+
+```
+constructr.coordination.nodes = ["10.10.10.10:2181", "10.10.10.11:2181", "10.10.10.12:2181"]
+```
+
 ## Testing
 
 Requirements:
