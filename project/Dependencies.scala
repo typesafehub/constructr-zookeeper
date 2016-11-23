@@ -1,8 +1,8 @@
 import sbt._
 
 object Version {
-  val akka             = "2.4.11"
-  val constructr       = "0.14.0"
+  val akka             = "2.4.14"
+  val constructr       = "0.15.0"
   val curator          = "2.11.0"
   val scala            = "2.11.8"
   val scalaTest        = "2.2.6"
