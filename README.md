@@ -8,7 +8,7 @@ This library enables to use [ZooKeeper](https://zookeeper.apache.org/) as cluste
 You will need to add the following dependency in your `build.sbt` in addition to the core ConstructR ones:
 
 ```
-libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.2.1"
+libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.3.0"
 ```
 
 
