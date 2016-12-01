@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Base64
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.{ Future, blocking }
 import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -86,6 +86,8 @@ private object ZookeeperCoordination {
  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
  */
 final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination {
+  private implicit val ec = system.dispatcher
+
   import ZookeeperCoordination.Converters._
 
   private val BasePath = s"/constructr/$clusterName"
@@ -128,19 +130,17 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   }
 
   override def getNodes(): Future[Set[Address]] =
-    Future.successful {
-      val result = nodes
-        .flatMap { node =>
-          val nodePath = s"$NodesPath/$node"
-          val deadline = client.getData.forPath(nodePath).decodeInstant
-          if (deadline.hasTimeLeft()) {
-            Some(node.decodeNode)
-          } else {
-            client.delete().forPath(nodePath)
-            None
-          }
+    blockingFuture {
+      nodes.flatMap { node =>
+        val nodePath = s"$NodesPath/$node"
+        val deadline = client.getData.forPath(nodePath).decodeInstant
+        if (deadline.hasTimeLeft()) {
+          Some(node.decodeNode)
+        } else {
+          client.delete().forPath(nodePath)
+          None
         }
-      result
+      }
     }
 
   override def lock(self: Address, ttl: FiniteDuration): Future[Boolean] = {
@@ -173,7 +173,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       }
     }
 
-    Future.successful {
+    blockingFuture {
       readLock() match {
         case Some(deadline) if deadline.hasTimeLeft() => false
         case Some(deadline)                           => writeLock(expiredLockExist = true)
@@ -183,7 +183,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   }
 
   override def addSelf(self: Address, ttl: FiniteDuration): Future[Done] = {
-    Future.successful {
+    blockingFuture {
       val nodePath = s"$NodesPath/${self.encode}"
       Option(client.checkExists().forPath(nodePath))
         .foreach(_ => client.delete().forPath(nodePath))
@@ -194,7 +194,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   }
 
   override def refresh(self: Address, ttl: FiniteDuration): Future[Done] =
-    Future.successful {
+    blockingFuture {
       nodes.foreach { node =>
         val nodePath = s"$NodesPath/$node"
         if (node.decodeNode == self)
@@ -211,4 +211,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       .forPath(NodesPath)
       .asScala
       .toSet
+
+  private def blockingFuture[T](f: => T): Future[T] =
+    Future(blocking(f))
 }
