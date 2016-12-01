@@ -27,7 +27,7 @@ import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.constructr.ConstructrExtension
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.retry.ExponentialBackoffRetry
+import org.apache.curator.retry.RetryNTimes
 import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 
 import scala.concurrent.Await
@@ -68,11 +68,9 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clust
   private val zookeeperClient = {
     val host = system.settings.config.getString("constructr.coordination.host")
     val port = system.settings.config.getInt("constructr.coordination.port")
-    val delay = system.settings.config.getDuration("constructr.coordination.connection-delay", MILLISECONDS)
-    val retry = system.settings.config.getInt("constructr.coordination.connection-retry")
     CuratorFrameworkFactory.builder()
       .connectString(s"$host:$port")
-      .retryPolicy(new ExponentialBackoffRetry(delay.toInt, retry))
+      .retryPolicy(new RetryNTimes(0, 0))
       .build()
   }
   private val zookeeperCoordination = Coordination(clusterName, system)
