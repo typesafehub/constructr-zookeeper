@@ -29,7 +29,7 @@ import scala.concurrent.{ Future, blocking }
 import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.retry.ExponentialBackoffRetry
+import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.utils.ZKPaths
 import org.apache.zookeeper.KeeperException.NodeExistsException
@@ -86,9 +86,9 @@ private object ZookeeperCoordination {
  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
  */
 final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination {
-  private implicit val ec = system.dispatcher
-
   import ZookeeperCoordination.Converters._
+
+  private implicit val ec = system.dispatcher
 
   private val BasePath = s"/constructr/$clusterName"
   private val NodesPath = s"$BasePath/nodes"
@@ -99,14 +99,11 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   private val nodesConnectionString =
     system.settings.config.getStringList("constructr.coordination.nodes").asScala.mkString(",")
 
-  private val client = {
-    val delay = system.settings.config.getDuration("constructr.coordination.connection-delay", MILLISECONDS)
-    val retry = system.settings.config.getInt("constructr.coordination.connection-retry")
+  private val client =
     CuratorFrameworkFactory.builder()
       .connectString(nodesConnectionString)
-      .retryPolicy(new ExponentialBackoffRetry(delay.toInt, retry))
+      .retryPolicy(new RetryNTimes(0, 0))
       .build()
-  }
 
   run()
   private val lock = init()
