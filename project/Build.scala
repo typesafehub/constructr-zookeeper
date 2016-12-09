@@ -57,7 +57,6 @@ object Build extends AutoPlugin {
 
     // Release settings
     releaseCrossBuild := true,
-    releasePublishArtifactsAction := publishSigned.value,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
@@ -66,7 +65,7 @@ object Build extends AutoPlugin {
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
-      ReleaseStep(action = Command.process("publishSigned", _)),
+      ReleaseStep(action = Command.process("+publishSigned", _)),
       setNextVersion,
       commitNextVersion,
       ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
