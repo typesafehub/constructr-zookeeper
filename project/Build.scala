@@ -8,6 +8,7 @@ import sbtrelease.ReleasePlugin.autoImport._
 import com.typesafe.sbt.SbtPgp.autoImport._
 import PgpKeys._
 import xerial.sbt.Sonatype.autoImport._
+import ReleaseTransformations._
 
 import scalariform.formatter.preferences.{AlignSingleLineCaseStatements, DoubleIndentClassDeclaration}
 
@@ -55,6 +56,20 @@ object Build extends AutoPlugin {
     sonatypeProfileName := "com.lightbend",
 
     // Release settings
-    releasePublishArtifactsAction := publishSigned.value
+    releasePublishArtifactsAction := publishSigned.value,
+    releaseProcess := Seq[ReleaseStep](
+      checkSnapshotDependencies,
+      inquireVersions,
+      runClean,
+      runTest,
+      setReleaseVersion,
+      commitReleaseVersion,
+      tagRelease,
+      ReleaseStep(action = Command.process("publishSigned", _)),
+      setNextVersion,
+      commitNextVersion,
+      ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
+      pushChanges
+    )
   )
 }
