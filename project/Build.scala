@@ -21,8 +21,8 @@ object Build extends AutoPlugin {
   override def projectSettings = Vector(
     // Core settings
     organization := "com.lightbend.constructr",
-    scalaVersion := Version.scala,
-    crossScalaVersions := Vector(scalaVersion.value),
+    scalaVersion := Version.scala212,
+    crossScalaVersions := Vector(Version.scala212, Version.scala211),
     scalacOptions ++= Vector(
       "-unchecked",
       "-deprecation",
@@ -56,6 +56,7 @@ object Build extends AutoPlugin {
     sonatypeProfileName := "com.lightbend",
 
     // Release settings
+    releaseCrossBuild := true,
     releasePublishArtifactsAction := publishSigned.value,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
