@@ -90,7 +90,10 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
 
   private implicit val ec = system.dispatcher
 
-  private val BasePath = s"/constructr/$clusterName"
+  private val RootPath =
+    system.settings.config.getString("constructr.coordination.zookeeper.rootpath")
+
+  private val BasePath = s"$RootPath/$clusterName"
   private val NodesPath = s"$BasePath/nodes"
   private val BaseLockPath = s"$BasePath/locks"
   private val SharedLockPath = s"$BaseLockPath/shared"
