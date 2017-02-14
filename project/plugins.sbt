@@ -1,4 +1,4 @@
-addSbtPlugin("de.heikoseeberger" % "sbt-header"      % "1.6.0")
+addSbtPlugin("de.heikoseeberger" % "sbt-header"      % "1.7.0")
 addSbtPlugin("com.typesafe.sbt"  % "sbt-multi-jvm"   % "0.3.11")
 addSbtPlugin("com.jsuereth"      % "sbt-pgp"         % "1.0.0")
 addSbtPlugin("com.github.gseitz" % "sbt-release"     % "1.0.3")
