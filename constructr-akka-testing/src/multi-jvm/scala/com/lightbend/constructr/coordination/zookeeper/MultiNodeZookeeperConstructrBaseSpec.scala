@@ -33,8 +33,8 @@ import org.scalatest.{BeforeAndAfterAll, FreeSpecLike, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object ConstructrMultiNodeConfig {
-  val coordinationHost = {
+object ConstructrMultiNodeConfig extends DockerZookeeper {
+  val coordinationHost: String = {
     val dockerHostPattern = """tcp://(\S+):\d{1,5}""".r
     sys.env.get("DOCKER_HOST")
       .collect { case dockerHostPattern(address) => address }
@@ -42,7 +42,7 @@ object ConstructrMultiNodeConfig {
   }
 }
 
-class ConstructrMultiNodeConfig(coordinationPort: Int) extends MultiNodeConfig {
+class ConstructrMultiNodeConfig(zkPort: Int) extends MultiNodeConfig {
 
   import ConstructrMultiNodeConfig._
 
@@ -53,8 +53,7 @@ class ConstructrMultiNodeConfig(coordinationPort: Int) extends MultiNodeConfig {
       s"""|akka.actor.provider            = akka.cluster.ClusterActorRefProvider
           |akka.remote.netty.tcp.hostname = "127.0.0.1"
           |akka.remote.netty.tcp.port     = $port
-          |constructr.coordination.host   = $coordinationHost
-          |constructr.coordination.port   = $coordinationPort
+          |constructr.coordination.nodes  = "$coordinationHost:$zkPort"
           |""".stripMargin
     ))
   }
@@ -64,27 +63,22 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clust
   extends MultiNodeSpec(new ConstructrMultiNodeConfig(coordinationPort))
     with FreeSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val mat = ActorMaterializer()
-  private val zookeeperClient = {
-    val host = system.settings.config.getString("constructr.coordination.host")
-    val port = system.settings.config.getInt("constructr.coordination.port")
-    CuratorFrameworkFactory.builder()
-      .connectString(s"$host:$port")
+  import ConstructrMultiNodeConfig._
+
+  implicit val mat: ActorMaterializer = ActorMaterializer()
+
+  private val zookeeperClient = CuratorFrameworkFactory.builder()
+      .connectString(system.settings.config.getString("constructr.coordination.nodes"))
       .retryPolicy(new RetryNTimes(0, 0))
       .build()
-  }
-  private val zookeeperCoordination = Coordination(clusterName, system)
 
   "Constructr should manage an Akka cluster" in {
-    runOn(roles.head) {
-      within(20.seconds.dilated) {
-        zookeeperClient.delete().deletingChildrenIfNeeded().forPath("/constructr")
-      }
-    }
+
+    ConstructrExtension(system)
+    val zookeeperCoordination = Coordination(clusterName, system)
 
     enterBarrier("coordination-started")
 
-    ConstructrExtension(system)
     val listener = actor(new Act {
 
       import ClusterEvent._
@@ -99,7 +93,7 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clust
     })
     within(20.seconds.dilated) {
       awaitAssert {
-        implicit val timeout = Timeout(1.second.dilated)
+        implicit val timeout: Timeout = Timeout(1.second.dilated)
         val isMember = Await.result((listener ? "isMember").mapTo[Boolean], 1.second.dilated)
         isMember shouldBe true
       }
@@ -120,26 +114,25 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clust
     enterBarrier("done")
   }
 
-  override def initialParticipants = roles.size
+  override def initialParticipants: Int = roles.size
 
-  override protected def beforeAll() = {
-    super.beforeAll()
-    multiNodeSpecBeforeAll()
-  }
-
+  override protected def beforeAll(): Unit = multiNodeSpecBeforeAll
 
   override protected def atStartup(): Unit = {
     super.atStartup()
+    runOn(roles.head) {
+      startAllOrFail()
+    }
     zookeeperClient.start()
   }
 
-  override protected def afterAll() = {
-    multiNodeSpecAfterAll()
-    super.afterAll()
-  }
+  override protected def afterAll(): Unit = multiNodeSpecAfterAll
 
   override protected def afterTermination(): Unit = {
     super.afterTermination()
     zookeeperClient.close()
+    runOn(roles.head) {
+      stopAllQuietly()
+    }
   }
 }

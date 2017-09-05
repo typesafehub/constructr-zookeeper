@@ -20,20 +20,18 @@ import akka.Done
 import akka.actor.{ ActorSystem, AddressFromURIString }
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import com.whisk.docker.scalatest.DockerTestKit
 import de.heikoseeberger.constructr.coordination.Coordination
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec }
 
-import scala.concurrent.{ Await, Awaitable }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Awaitable }
 import scala.util.Random
 
 object ZookeeperCoordinationSpec {
   private val address1 = AddressFromURIString("akka.tcp://default@a:2552")
   private val address2 = AddressFromURIString("akka.tcp://default@b:2552")
 
-  // this test assumes zookeeper server is up on DOCKER_HOST or localhost(127.0.0.1)
-  // below command would be help:
-  //   $ docker run --name zookeeper -p 2181:2181 -d jplock/zookeeper
   private val coordinationHost = {
     val dockerHostPattern = """tcp://(\S+):\d{1,5}""".r
     sys.env.get("DOCKER_HOST")
@@ -42,17 +40,22 @@ object ZookeeperCoordinationSpec {
   }
 }
 
-class ZookeeperCoordinationSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class ZookeeperCoordinationSpec extends WordSpec with Matchers with DockerZookeeper with DockerTestKit {
+
   import ZookeeperCoordinationSpec._
 
-  private implicit val system = {
-    val config = ConfigFactory.parseString(s"constructr.coordination.host = $coordinationHost").withFallback(ConfigFactory.load())
+  private implicit val system: ActorSystem = {
+    val config = ConfigFactory.parseString(
+      s"""
+         |constructr.coordination.nodes = ["$coordinationHost:2181"]
+       """.stripMargin
+    ).withFallback(ConfigFactory.load())
     ActorSystem("default", config)
   }
 
   "ZookeeperCoordination" should {
     "correctly interact with zookeeper" in {
-      val coordination: Coordination = new ZookeeperCoordination(randomString(), system)
+      val coordination: Coordination = Coordination(randomString(), system)
 
       resultOf(coordination.getNodes()) shouldBe 'empty
 
@@ -75,7 +78,7 @@ class ZookeeperCoordinationSpec extends WordSpec with Matchers with BeforeAndAft
     }
   }
 
-  override protected def afterAll() = {
+  override def afterAll() = {
     Await.ready(system.terminate(), Duration.Inf)
     super.afterAll()
   }
