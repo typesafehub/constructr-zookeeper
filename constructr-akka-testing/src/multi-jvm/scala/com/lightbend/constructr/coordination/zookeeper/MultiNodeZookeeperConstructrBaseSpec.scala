@@ -23,6 +23,7 @@ import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.stream.ActorMaterializer
 import akka.testkit.TestDuration
 import akka.util.Timeout
+import com.lightbend.constructr.coordination.zookeeper.ZookeeperNodes.Nodes
 import com.typesafe.config.ConfigFactory
 import de.heikoseeberger.constructr.ConstructrExtension
 import de.heikoseeberger.constructr.coordination.Coordination
@@ -68,7 +69,7 @@ abstract class MultiNodeZookeeperConstructrBaseSpec(coordinationPort: Int, clust
   implicit val mat: ActorMaterializer = ActorMaterializer()
 
   private val zookeeperClient = CuratorFrameworkFactory.builder()
-      .connectString(system.settings.config.getString("constructr.coordination.nodes"))
+      .connectString(system.settings.config.getString(Nodes))
       .retryPolicy(new RetryNTimes(0, 0))
       .build()
 

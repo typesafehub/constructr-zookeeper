@@ -1,0 +1,53 @@
+= ConstructR-ZooKeeper
+
+image:https://travis-ci.org/typesafehub/constructr-zookeeper.svg?branch=master[Build Status,link=https://travis-ci.org/typesafehub/constructr-zookeeper]
+
+This library enables to use https://zookeeper.apache.org/[ZooKeeper] as cluster coordinator in a https://github.com/hseeberger/constructr[ConstructR] based node.
+
+https://github.com/hseeberger/constructr[ConstructR] aims at cluster bootstrapping (construction) by using a coordination service and provides etcd as the default one. By means of this library, you will be able to use https://zookeeper.apache.org/[ZooKeeper] as coordination service instead.
+
+You will need to add the following dependency in your `build.sbt` in addition to the core ConstructR ones:
+
+[source]
+----
+libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.3.3"
+----
+
+== Configuration
+
+Check https://github.com/hseeberger/constructr#coordination[this section] in ConstructR for general information about configuration.
+
+Check link:constructr-coordination-zookeeper/src/main/resources/reference.conf[reference.conf] for ZooKeeper related configuration.
+
+=== Configuring ZK cluster nodes
+
+The default configuration tries to establish a connection to ZooKeeper on `localhost:2181`.
+
+Override the `constructr.coordination.nodes` configuration to specify another ZooKeeper node:
+
+[source]
+----
+constructr.coordination.nodes = ["10.10.10.10:2181"]
+----
+
+The format per node `ip:port`.
+
+You are also able to connect to a multi-node cluster by specifying multiple nodes, separated by a comma:
+
+[source]
+----
+constructr.coordination.nodes = ["10.10.10.10:2181", "10.10.10.11:2181", "10.10.10.12:2181"]
+----
+
+Additionally, comma separated connection string format is supported
+
+[source]
+----
+constructr.coordination.nodes = "10.10.10.10:2181,10.10.10.11:2181,10.10.10.12:2181"
+----
+
+== Testing
+
+Run tests:
+
+  $ sbt test

@@ -37,7 +37,6 @@ import scala.concurrent.{ Future, blocking }
 private object ZookeeperCoordination {
 
   object Converters {
-
     implicit class InstantOps(instant: Instant) {
       def encode: Array[Byte] = {
         val bytes = java.nio.ByteBuffer.allocate(java.lang.Long.BYTES).putLong(instant.toEpochMilli).array()
@@ -70,9 +69,7 @@ private object ZookeeperCoordination {
       def decodeNode: Address =
         AddressFromURIString(new String(Base64.getUrlDecoder.decode(s), UTF_8))
     }
-
   }
-
 }
 
 /**
@@ -88,14 +85,14 @@ private object ZookeeperCoordination {
  * The TTL in milliseconds represents the time elapsed since 1970-01-01T00:00:00 UTC.
  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
  */
-final class ZookeeperCoordination(clusterName: String, actorSystem: ActorSystem) extends Coordination with ZookeeperNodes {
+final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination with ZookeeperNodes {
 
   import ZookeeperCoordination.Converters._
 
-  private implicit val ec = actorSystem.dispatcher
+  private implicit val ec = system.dispatcher
 
   private val RootPath =
-    actorSystem.settings.config.getString("constructr.coordination.zookeeper.rootpath")
+    system.settings.config.getString("constructr.coordination.zookeeper.rootpath")
 
   private val BasePath = s"$RootPath/$clusterName"
   private val NodesPath = s"$BasePath/nodes"
@@ -105,7 +102,7 @@ final class ZookeeperCoordination(clusterName: String, actorSystem: ActorSystem)
 
   private val client =
     CuratorFrameworkFactory.builder()
-      .connectString(nodesConnectionString(actorSystem))
+      .connectString(nodesConnectionString(system))
       .retryPolicy(new RetryNTimes(0, 0))
       .build()
 
@@ -114,11 +111,11 @@ final class ZookeeperCoordination(clusterName: String, actorSystem: ActorSystem)
 
   private def run(): Unit = {
     def shutdown(): Unit = {
-      actorSystem.log.info("Zookeeper client closes connection to nodes [{}]..", nodesConnectionString(actorSystem))
+      system.log.info("Zookeeper client closes connection to nodes [{}]..", nodesConnectionString(system))
       client.close()
     }
 
-    actorSystem.log.info("Zookeeper client tries to establish a connection to nodes [{}]..", nodesConnectionString(actorSystem))
+    system.log.info("Zookeeper client tries to establish a connection to nodes [{}]..", nodesConnectionString(system))
     client.start()
     client.blockUntilConnected()
     sys.addShutdownHook(shutdown())

@@ -17,17 +17,28 @@
 package com.lightbend.constructr.coordination.zookeeper
 
 import akka.actor.ActorSystem
+import com.lightbend.constructr.coordination.zookeeper.ZookeeperNodes.Nodes
 import com.typesafe.config.ConfigException.WrongType
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Try
 
+object ZookeeperNodes {
+  val Nodes : String = "constructr.coordination.nodes"
+}
+
+/**
+  * Helper for extracting Zookeeper nodes configuration from {@link akka.actor.ActorSystem ActorSystem} settings.
+  *
+  * First, tries to get comma-saparated list of nodes from `String` settings,
+  * if not found then falls back to parsing `List` of strings.
+  */
 trait ZookeeperNodes {
-  def nodesConnectionString(actorSystem: ActorSystem): String = {
+  def nodesConnectionString(system: ActorSystem): String = {
     Try(
-      actorSystem.settings.config.getString("constructr.coordination.nodes")
+      system.settings.config.getString(Nodes)
     ).recover {
-        case ex: WrongType => actorSystem.settings.config.getStringList("constructr.coordination.nodes").asScala.mkString(",")
+        case ex: WrongType => system.settings.config.getStringList(Nodes).asScala.mkString(",")
       }.get
   }
 }

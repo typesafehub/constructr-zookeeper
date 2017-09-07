@@ -17,8 +17,9 @@
 package com.lightbend.constructr.coordination.zookeeper
 
 import akka.actor.ActorSystem
+import com.lightbend.constructr.coordination.zookeeper.ZookeeperNodes.Nodes
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 
 class ZookeeperNodesSpec extends WordSpec with Matchers with ZookeeperNodes {
 
@@ -31,9 +32,9 @@ class ZookeeperNodesSpec extends WordSpec with Matchers with ZookeeperNodes {
       )
       val actorSystem = ActorSystem("default", config)
 
-      config.getStringList("constructr.coordination.nodes").size() shouldBe 2
-      config.getStringList("constructr.coordination.nodes") should contain("host1:2181")
-      config.getStringList("constructr.coordination.nodes") should contain("host2:2181")
+      config.getStringList(Nodes).size() shouldBe 2
+      config.getStringList(Nodes) should contain("host1:2181")
+      config.getStringList(Nodes) should contain("host2:2181")
 
       nodesConnectionString(actorSystem) shouldBe "host1:2181,host2:2181"
     }
@@ -46,7 +47,7 @@ class ZookeeperNodesSpec extends WordSpec with Matchers with ZookeeperNodes {
       )
       val actorSystem = ActorSystem("default", config)
 
-      config.getString("constructr.coordination.nodes") shouldBe "host1:2181,host2:2181"
+      config.getString(Nodes) shouldBe "host1:2181,host2:2181"
       nodesConnectionString(actorSystem) shouldBe "host1:2181,host2:2181"
     }
   }
