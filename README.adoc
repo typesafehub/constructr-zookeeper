@@ -6,11 +6,27 @@ This library enables to use https://zookeeper.apache.org/[ZooKeeper] as cluster 
 
 https://github.com/hseeberger/constructr[ConstructR] aims at cluster bootstrapping (construction) by using a coordination service and provides etcd as the default one. By means of this library, you will be able to use https://zookeeper.apache.org/[ZooKeeper] as coordination service instead.
 
-You will need to add the following dependency in your `build.sbt` in addition to the core ConstructR ones:
+== Installation
 
+SBT::
+You will need to add the following dependency in your `build.sbt` in addition to the core ConstructR ones:
++
 [source]
 ----
-libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.3.3"
+libraryDependencies += "com.lightbend.constructr" %% "constructr-coordination-zookeeper" % "0.3.5"
+----
+
+Gradle::
+Add following to `build.gradle`.
++
+.Scala 2.11
+----
+compile 'com.lightbend.constructr:constructr-coordination-zookeeper_2.11:0.3.5'
+----
++
+.Scala 2.12
+----
+compile 'com.lightbend.constructr:constructr-coordination-zookeeper_2.12:0.3.5'
 ----
 
 == Configuration
