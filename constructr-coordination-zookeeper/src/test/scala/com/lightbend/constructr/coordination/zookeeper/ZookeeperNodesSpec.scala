@@ -19,7 +19,7 @@ package com.lightbend.constructr.coordination.zookeeper
 import akka.actor.ActorSystem
 import com.lightbend.constructr.coordination.zookeeper.ZookeeperNodes.Nodes
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class ZookeeperNodesSpec extends WordSpec with Matchers with ZookeeperNodes {
 
