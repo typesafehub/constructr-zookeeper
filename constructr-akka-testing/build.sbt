@@ -5,7 +5,9 @@ libraryDependencies ++= Vector(
   Library.akkaCluster          % "test",
   Library.akkaMultiNodeTestkit % "test",
   Library.akkaTestkit          % "test",
-  Library.scalaTest            % "test"
+  Library.scalaTest            % "test",
+  Library.dockerTestKit        % "test",
+  Library.dockerTestKitImpl    % "test"
 )
 
 

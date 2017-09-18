@@ -17,22 +17,22 @@
 package com.lightbend.constructr.coordination
 package zookeeper
 
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
+import java.util.Base64
 
 import akka.Done
 import akka.actor.{ ActorSystem, Address, AddressFromURIString }
-import java.nio.charset.StandardCharsets.UTF_8
-import java.util.Base64
-
-import scala.collection.JavaConverters._
-import scala.concurrent.{ Future, blocking }
-import scala.concurrent.duration._
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
+import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.utils.ZKPaths
 import org.apache.zookeeper.KeeperException.NodeExistsException
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, blocking }
 
 private object ZookeeperCoordination {
 
@@ -85,7 +85,8 @@ private object ZookeeperCoordination {
  * The TTL in milliseconds represents the time elapsed since 1970-01-01T00:00:00 UTC.
  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
  */
-final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination {
+final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination with ZookeeperNodes {
+
   import ZookeeperCoordination.Converters._
 
   private implicit val ec = system.dispatcher
@@ -99,12 +100,9 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   private val SharedLockPath = s"$BaseLockPath/shared"
   private val NodesLockKey = s"$BaseLockPath/nodes-lock"
 
-  private val nodesConnectionString =
-    system.settings.config.getStringList("constructr.coordination.nodes").asScala.mkString(",")
-
   private val client =
     CuratorFrameworkFactory.builder()
-      .connectString(nodesConnectionString)
+      .connectString(nodesConnectionString(system))
       .retryPolicy(new RetryNTimes(0, 0))
       .build()
 
@@ -113,11 +111,11 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
 
   private def run(): Unit = {
     def shutdown(): Unit = {
-      system.log.info("Zookeeper client closes connection to nodes [{}]..", nodesConnectionString)
+      system.log.info("Zookeeper client closes connection to nodes [{}]..", nodesConnectionString(system))
       client.close()
     }
 
-    system.log.info("Zookeeper client tries to establish a connection to nodes [{}]..", nodesConnectionString)
+    system.log.info("Zookeeper client tries to establish a connection to nodes [{}]..", nodesConnectionString(system))
     client.start()
     client.blockUntilConnected()
     sys.addShutdownHook(shutdown())
