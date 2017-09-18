@@ -24,15 +24,15 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.util.Try
 
 object ZookeeperNodes {
-  val Nodes : String = "constructr.coordination.nodes"
+  val Nodes: String = "constructr.coordination.nodes"
 }
 
 /**
-  * Helper for extracting Zookeeper nodes configuration from {@link akka.actor.ActorSystem ActorSystem} settings.
-  *
-  * First, tries to get comma-saparated list of nodes from `String` settings,
-  * if not found then falls back to parsing `List` of strings.
-  */
+ * Helper for extracting Zookeeper nodes configuration from {@link akka.actor.ActorSystem ActorSystem} settings.
+ *
+ * First, tries to get comma-saparated list of nodes from `String` settings,
+ * if not found then falls back to parsing `List` of strings.
+ */
 trait ZookeeperNodes {
   def nodesConnectionString(system: ActorSystem): String = {
     Try(
