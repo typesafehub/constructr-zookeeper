@@ -28,6 +28,8 @@ import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.utils.ZKPaths
+import org.apache.log4j.Logger
+import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NodeExistsException
 
 import scala.collection.JavaConverters._
@@ -87,6 +89,8 @@ private object ZookeeperCoordination {
  */
 final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination with ZookeeperNodes {
 
+  private val logger: Logger = Logger.getLogger(classOf[ZookeeperCoordination])
+
   import ZookeeperCoordination.Converters._
 
   private implicit val ec = system.dispatcher
@@ -127,7 +131,8 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
     new InterProcessSemaphoreMutex(client, SharedLockPath)
   }
 
-  override def getNodes(): Future[Set[Address]] =
+  override def getNodes(): Future[Set[Address]] = {
+    logger.debug("Entering GettingNodes state")
     blockingFuture {
       nodes.flatMap { node =>
         val nodePath = s"$NodesPath/$node"
@@ -140,6 +145,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
         }
       }
     }
+  }
 
   override def lock(self: Address, ttl: FiniteDuration): Future[Boolean] = {
     def readLock(): Option[Instant] =
@@ -171,6 +177,8 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       }
     }
 
+    logger.debug("Entering Locking state")
+
     blockingFuture {
       readLock() match {
         case Some(deadline) if deadline.hasTimeLeft() => false
@@ -181,17 +189,20 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   }
 
   override def addSelf(self: Address, ttl: FiniteDuration): Future[Done] = {
+    logger.debug("Entering AddingSelf state")
+
     blockingFuture {
       val nodePath = s"$NodesPath/${self.encode}"
       Option(client.checkExists().forPath(nodePath))
         .foreach(_ => client.delete().forPath(nodePath))
 
-      client.create().forPath(nodePath, (Instant.now + ttl).encode)
+      client.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, (Instant.now + ttl).encode)
       Done
     }
   }
 
-  override def refresh(self: Address, ttl: FiniteDuration): Future[Done] =
+  override def refresh(self: Address, ttl: FiniteDuration): Future[Done] = {
+    logger.debug("Entering Refreshing state")
     blockingFuture {
       nodes.foreach { node =>
         val nodePath = s"$NodesPath/$node"
@@ -202,6 +213,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       }
       Done
     }
+  }
 
   private def nodes: Set[String] =
     client
