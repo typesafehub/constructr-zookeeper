@@ -2,10 +2,10 @@ import sbt._
 
 object Version {
   val akka             = "2.5.1"
-  val constructr       = "0.17.0"
+  val constructr       = "0.18.0"
   val curator          = "2.12.0"
   val scala211         = "2.11.11"
-  val scala212         = "2.12.3"
+  val scala212         = "2.12.4"
   val scalaTest        = "3.0.1"
   val dockerItScala    = "0.9.5"
 }
