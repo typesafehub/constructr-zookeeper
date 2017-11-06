@@ -22,19 +22,18 @@ import java.time.Instant
 import java.util.Base64
 
 import akka.Done
-import akka.actor.{ ActorSystem, Address, AddressFromURIString }
+import akka.actor.{ActorSystem, Address, AddressFromURIString}
 import de.heikoseeberger.constructr.coordination.Coordination
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.utils.ZKPaths
-import org.apache.log4j.Logger
 import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NodeExistsException
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, blocking }
+import scala.concurrent.{Future, blocking}
 
 private object ZookeeperCoordination {
 
@@ -75,21 +74,19 @@ private object ZookeeperCoordination {
 }
 
 /**
- * A coordination service for ConstructR that uses Zookeeper as the distributed data store.
- *
- * The locking mechanism is using the [[InterProcessSemaphoreMutex]] lock from the Apache Curator library
- * in combination with an additional lock file to store the TTL.
- *
- * Zookeeper does not support the concept that keys can expiry based on a TTL.
- * Therefore, this implementation is using [[Instant]] to represent a TTL.
- * The instant value is stored inside the key as a data object.
- * It is stored in Zookeeper as milliseconds, converted to a byte array and then encoded as a Base64 string.
- * The TTL in milliseconds represents the time elapsed since 1970-01-01T00:00:00 UTC.
- * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
- */
+  * A coordination service for ConstructR that uses Zookeeper as the distributed data store.
+  *
+  * The locking mechanism is using the [[InterProcessSemaphoreMutex]] lock from the Apache Curator library
+  * in combination with an additional lock file to store the TTL.
+  *
+  * Zookeeper does not support the concept that keys can expiry based on a TTL.
+  * Therefore, this implementation is using [[Instant]] to represent a TTL.
+  * The instant value is stored inside the key as a data object.
+  * It is stored in Zookeeper as milliseconds, converted to a byte array and then encoded as a Base64 string.
+  * The TTL in milliseconds represents the time elapsed since 1970-01-01T00:00:00 UTC.
+  * Because TTL value is always converted into the UTC time zone, it can be safely used across different time zones.
+  */
 final class ZookeeperCoordination(clusterName: String, system: ActorSystem) extends Coordination with ZookeeperNodes {
-
-  private val logger: Logger = Logger.getLogger(classOf[ZookeeperCoordination])
 
   import ZookeeperCoordination.Converters._
 
@@ -131,8 +128,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
     new InterProcessSemaphoreMutex(client, SharedLockPath)
   }
 
-  override def getNodes(): Future[Set[Address]] = {
-    logger.debug("Entering GettingNodes state")
+  override def getNodes(): Future[Set[Address]] =
     blockingFuture {
       nodes.flatMap { node =>
         val nodePath = s"$NodesPath/$node"
@@ -145,7 +141,6 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
         }
       }
     }
-  }
 
   override def lock(self: Address, ttl: FiniteDuration): Future[Boolean] = {
     def readLock(): Option[Instant] =
@@ -177,8 +172,6 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       }
     }
 
-    logger.debug("Entering Locking state")
-
     blockingFuture {
       readLock() match {
         case Some(deadline) if deadline.hasTimeLeft() => false
@@ -189,8 +182,6 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
   }
 
   override def addSelf(self: Address, ttl: FiniteDuration): Future[Done] = {
-    logger.debug("Entering AddingSelf state")
-
     blockingFuture {
       val nodePath = s"$NodesPath/${self.encode}"
       Option(client.checkExists().forPath(nodePath))
@@ -201,8 +192,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
     }
   }
 
-  override def refresh(self: Address, ttl: FiniteDuration): Future[Done] = {
-    logger.debug("Entering Refreshing state")
+  override def refresh(self: Address, ttl: FiniteDuration): Future[Done] =
     blockingFuture {
       nodes.foreach { node =>
         val nodePath = s"$NodesPath/$node"
@@ -213,7 +203,6 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       }
       Done
     }
-  }
 
   private def nodes: Set[String] =
     client
