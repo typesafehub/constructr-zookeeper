@@ -28,6 +28,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex
 import org.apache.curator.retry.RetryNTimes
 import org.apache.curator.utils.ZKPaths
+import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.KeeperException.NodeExistsException
 
 import scala.collection.JavaConverters._
@@ -186,7 +187,7 @@ final class ZookeeperCoordination(clusterName: String, system: ActorSystem) exte
       Option(client.checkExists().forPath(nodePath))
         .foreach(_ => client.delete().forPath(nodePath))
 
-      client.create().forPath(nodePath, (Instant.now + ttl).encode)
+      client.create().withMode(CreateMode.EPHEMERAL).forPath(nodePath, (Instant.now + ttl).encode)
       Done
     }
   }
