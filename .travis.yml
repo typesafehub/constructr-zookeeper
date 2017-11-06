@@ -12,4 +12,4 @@ jdk:
 services:
   - docker
 
-script: sbt constructr-coordination-zookeeper/test constructr-akka-testing/test
+script: sbt test

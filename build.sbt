@@ -19,3 +19,7 @@ name := "constructr-zookeeper-root"
 
 unmanagedSourceDirectories.in(Compile) := Vector.empty
 unmanagedSourceDirectories.in(Test)    := Vector.empty
+
+// Executes the sbt sub projects sequentially and ensures that the shutdown of the first project has been occurred
+// before starting with the subsequent project. This is necessary due to starting and stopping Docker images during tests.
+parallelExecution in Global := false
