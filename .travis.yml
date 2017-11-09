@@ -3,7 +3,7 @@ sudo: required
 language: scala
 
 scala:
-  - 2.12.3
+  - 2.12.4
   - 2.11.11
 
 jdk:
@@ -12,4 +12,4 @@ jdk:
 services:
   - docker
 
-script: sbt test
+script: sbt +test
