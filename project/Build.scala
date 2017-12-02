@@ -40,6 +40,7 @@ object Build extends AutoPlugin {
     unmanagedSourceDirectories.in(Compile) := Vector(scalaSource.in(Compile).value),
     unmanagedSourceDirectories.in(Test) := Vector(scalaSource.in(Test).value),
 
+
     // Scalariform settings
     SbtScalariform.autoImport.scalariformPreferences := SbtScalariform.autoImport.scalariformPreferences.value
       .setPreference(AlignSingleLineCaseStatements, true)
@@ -61,7 +62,7 @@ object Build extends AutoPlugin {
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      runTest,
+      releaseStepCommand("run-tests"),
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
@@ -71,5 +72,9 @@ object Build extends AutoPlugin {
       ReleaseStep(action = Command.process("sonatypeReleaseAll", _), enableCrossBuild = true),
       pushChanges
     )
-  )
+
+    // FIXME
+    // For some reason, +test results in tests failing due to bincompat issues, explicitly
+    // issuing clean seems to work around it for now
+  ) ++ addCommandAlias("run-tests", s";++${Version.scala211};clean;test;++${Version.scala212};clean;test")
 }
